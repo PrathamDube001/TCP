@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How TCP works: an interactive walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell"><aside class="side"><div class="brand">TCP<br>explained</div><nav id='nav' aria-label='Sections'></nav></aside><main class="w">
+<header class="hero"><div><h1>How TCP works</h1>
+<p class="lede">TCP gives two programs a reliable, ordered conversation over a network that can drop or reorder packets. Pick a scenario, then step through it to see every segment, flag and state change.</p><div class="ctl"><button class="p" data-t="s-walk">Start the walkthrough</button><button data-t="s-sim">Try the simulator</button></div></div><div class="card hv"><div class="pk" aria-hidden="true"><i class="a"></i><i class="b"></i><span class="p1">SYN</span><span class="p2">SYN-ACK</span><span class="p3">ACK</span></div><div class="ends" aria-hidden="true"><b style="color:var(--c)">Client</b><b style="color:var(--s)">Server</b></div><p class="note" style="margin-bottom:0">A connection opens with three segments: SYN, SYN-ACK, ACK.</p></div></header><h2 id='s-walk'>Step-by-step walkthrough</h2>
+
+<div class="tabs" id="tabs" role="group" aria-label="Scenario"></div>
+
+<div class="grid">
+  <div class="card">
+    <svg id="dia" viewBox="0 0 600 400" role="img" aria-label="Sequence diagram of TCP segments between client and server"></svg>
+    <div class="ctl">
+      <button id="back">Back</button>
+      <button id="next" class="p">Next step</button>
+      <button id="play">Play</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+  <div class="card" aria-live="polite">
+    <div class="st">
+      <div class="cb"><small>Client state</small><b id="cs"></b></div>
+      <div class="sb"><small>Server state</small><b id="ss"></b></div>
+    </div>
+    <h2 id="h"></h2>
+    <p id="t" style="margin:0"></p>
+    <div id="hdr"></div>
+  </div>
+</div>
+
+<div class="keys">
+  <div class="card"><h2>Reliability</h2><p>Every byte has a sequence number. The receiver sends ACKs, and the sender retransmits anything that isn’t acknowledged in time.</p></div>
+  <div class="card"><h2>Ordering</h2><p>Segments can arrive out of order. TCP uses sequence numbers to put the bytes back in order before the application sees them.</p></div>
+  <div class="card"><h2>Flow control</h2><p>Each ACK carries a window size: how much more data the receiver can hold. The sender never sends more than that.</p></div>
+  <div class="card"><h2>Congestion control</h2><p>The sender starts slowly and speeds up while ACKs return, then backs off when packets are lost, so it doesn’t overload the network.</p></div>
+</div>
+<section id='s-win'><h2>Sliding window and congestion window</h2><p class='lede' style='margin-bottom:12px'>The sender may have at most <b>cwnd</b> segments in flight at once. Every acknowledgment slides the window forward. Step through round trips (RTTs) and trigger a loss to see slow start, congestion avoidance and the back-off.</p><div class='card'><svg id='wstrip' viewBox='0 0 600 44' role='img' aria-label='Segments: acknowledged, in flight, not yet sent'></svg><svg id='wchart' viewBox='0 0 600 200' role='img' aria-label='Congestion window over time'></svg><p id='wtxt' style='margin:8px 0 0' aria-live='polite'></p><div class='ctl'><button id='wn' class='p'>Next RTT</button><button id='wd'>Triple duplicate ACK</button><button id='wt'>Timeout</button><button id='wr'>Reset</button></div><p class='note'>Teal = acknowledged, purple = in flight, empty = not yet sent. A triple duplicate ACK halves cwnd; a timeout drops it back to 1 segment. The real limit is the smaller of cwnd and the receiver’s advertised window.</p></div></section><section id='s-sim'><h2>Send your own message</h2><p class='lede' style='margin-bottom:12px'>Type a message and set how often the network drops packets, in each direction. The message is cut into 4-character segments and sent one at a time, so you can watch every timeout and retransmission.</p><div class='card'><div class='ctl' style='margin-top:0'><input type='text' id='msg' value='HELLO TCP WORLD' maxlength='60' aria-label='Message to send'><button id='go' class='p'>Send</button></div><div class='ctl'><label for='loss'>Packet loss: <b id='lv'>20%</b></label><input type='range' id='loss' min='0' max='60' value='20'></div><p style='margin:10px 0 0'>Server received: <b id='rx' style='font-family:IBM Plex Mono,monospace'></b></p><ul class='log' id='log' aria-live='polite'></ul><div class='stats' id='stats'></div></div></section><section id='s-hdr'><h2>The TCP header</h2><p class='lede' style='margin-bottom:12px'>Every segment starts with this header. Each row is 32 bits wide. Tap a field to see what it does.</p><div class='card'><div class='hd' id='hd'></div><p id='hi' style='margin:12px 0 0'>Tap a field. The fixed part of the header is 20 bytes; options can stretch it to 60.</p></div></section><section id='s-udp'><h2>TCP vs UDP</h2><p class='lede' style='margin-bottom:12px'>Both run on top of IP. They make opposite trade-offs between reliability and speed.</p><div class='card tw'><table><thead><tr><th></th><th>TCP</th><th>UDP</th></tr></thead><tbody><tr><td>Connection</td><td>Connection-oriented: a handshake comes first</td><td>Connectionless: just send</td></tr><tr><td>Reliability</td><td>Lost data is retransmitted</td><td>No retransmission; lost datagrams stay lost</td></tr><tr><td>Ordering</td><td>Bytes are delivered in order</td><td>Datagrams can arrive in any order</td></tr><tr><td>Flow and congestion control</td><td>Yes</td><td>None</td></tr><tr><td>Data model</td><td>Continuous byte stream</td><td>Separate messages (datagrams)</td></tr><tr><td>Header size</td><td>20 to 60 bytes</td><td>8 bytes</td></tr><tr><td>Speed</td><td>Slower: handshake, ACKs, waiting for resends</td><td>Faster, lower latency</td></tr><tr><td>Typical uses</td><td>Web (HTTP/HTTPS), email, file transfer, SSH</td><td>DNS, video calls, online games, live streaming</td></tr></tbody></table><p class='note'>Choose TCP when every byte must arrive correctly. Choose UDP when speed matters more than perfection, or when the application handles loss itself. HTTP/3 is built on QUIC, which runs over UDP and adds its own reliability.</p></div></section><p class="note">Sequence numbers here are small on purpose. Real connections start at a random 32-bit number and count bytes, not segments.</p>
+<footer class="note foot">TCP explained: handshake, data transfer, loss recovery, teardown, windows, header, and TCP vs UDP.</footer></main></div>
+
+<script src="script.js"></script>
+</body>
+</html>
